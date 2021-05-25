@@ -1,0 +1,11 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:2.0
+    volumes:
+      # Mount for influxdb data directory and configuration
+        - ./influxdb:/var/lib/influxdb2
+    ports:
+        - "8087:8086"
+
+        
