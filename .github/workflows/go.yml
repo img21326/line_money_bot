@@ -1,4 +1,4 @@
-name: Flask CICD
+name: Go Deploy 
 
 # 觸發條件
 on:
