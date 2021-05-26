@@ -4,14 +4,25 @@ services:
     image: influxdb:2.0
     volumes:
       # Mount for influxdb data directory and configuration
-        - ./influxdb:/var/lib/influxdb2
+      - ./influxdb:/var/lib/influxdb2
     ports:
-        - "8087:8086"
+      - "8087:8086"
+    networks:
+        - web
   server:
     build: .
     ports: 
       - 9090:9090
     env_file: 
       - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.basic.frontend.rule=Host:linebotmoneybot.liiao.cc"
+      - "traefik.frontend.entryPoints=https,http"
+    restart: always
+    networks:
+        - web
 
-        
+networks:
+  web:
+    external: true    
