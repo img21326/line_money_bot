@@ -61,8 +61,8 @@ func main() {
 							}
 							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("餘額為: %d", amount))).Do(); err != nil {
 								log.Print(err)
-								return
 							}
+							return
 						}
 						if message_arr[0] == "今日花費" {
 							now := time.Now()
@@ -81,8 +81,8 @@ func main() {
 							}
 							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本日花費為: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
-								return
 							}
+							return
 
 						}
 						if message_arr[0] == "本週花費" {
@@ -100,8 +100,8 @@ func main() {
 							}
 							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
-								return
 							}
+							return
 
 						}
 						if message_arr[0] == "本月花費" {
@@ -119,21 +119,21 @@ func main() {
 							}
 							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
-								return
 							}
+							return
 						}
 					}
 					if message_arr[0][0] != 43 && message_arr[0][0] != 45 {
 						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("格式輸入錯誤")).Do(); err != nil {
 							log.Print(err)
-							return
 						}
+						return
 					}
 					if len(message_arr) >= 3 {
 						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("格式輸入錯誤")).Do(); err != nil {
 							log.Print(err)
-							return
 						}
+						return
 					}
 					amount, _ := strconv.Atoi(message_arr[0])
 
@@ -154,8 +154,8 @@ func main() {
 					writeAPI.WritePoint(context.Background(), p)
 					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("已存入資料庫")).Do(); err != nil {
 						log.Print(err)
-						return
 					}
+					return
 				}
 			}
 		}
