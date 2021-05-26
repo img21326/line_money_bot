@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -80,7 +79,7 @@ func main() {
 							for result.Next() {
 								amount = result.Record().Value().(int64)
 							}
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本日花費為: %f", math.Abs(float64(amount))))).Do(); err != nil {
+							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本日花費為: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
 								return
 							}
@@ -99,7 +98,7 @@ func main() {
 							for result.Next() {
 								amount = result.Record().Value().(int64)
 							}
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %f", math.Abs(float64(amount))))).Do(); err != nil {
+							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
 								return
 							}
@@ -118,7 +117,7 @@ func main() {
 							for result.Next() {
 								amount = result.Record().Value().(int64)
 							}
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %f", math.Abs(float64(amount))))).Do(); err != nil {
+							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %d", Abs((amount))))).Do(); err != nil {
 								log.Print(err)
 								return
 							}
@@ -166,4 +165,11 @@ func main() {
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func Abs(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
