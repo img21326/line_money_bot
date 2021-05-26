@@ -1,0 +1,35 @@
+name: Flask CICD
+
+# 觸發條件
+on:
+  push:
+    branches: [ deploy ]
+
+# 執行一項或多項任務
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.15.2]
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Build binary
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -a -o release/linux/amd64/moneybot
+      - name: Update the API service
+        uses: appleboy/ssh-action@v0.0.6
+        with:
+          host: ${{ secrets.ssh_host }}
+          username: ${{ secrets.username }}
+          key: ${{ secrets.ssh_key }}
+          script_stop: true
+          script: |
+            cd ~/line_money_bot
+            docker-compose down
+            git pull
+            docker-compose up --build -d
