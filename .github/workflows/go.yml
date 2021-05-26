@@ -18,6 +18,8 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v1
       - name: Build binary
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -a -o .
