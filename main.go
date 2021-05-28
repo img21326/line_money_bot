@@ -55,7 +55,7 @@ func main() {
 	dsn := fmt.Sprintf("host=%s user=postgres password=%s dbname=moneybot port=%s sslmode=disable TimeZone=Asia/Taipei", db_host, db_pwd, db_port)
 	fmt.Print(dsn)
 	// "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
-
+	time.Sleep(10 * time.Second)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	db.AutoMigrate(&User{}, &Account{}, &Tag{})
 
