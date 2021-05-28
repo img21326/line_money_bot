@@ -53,7 +53,7 @@ func main() {
 	db_pwd := os.Getenv("POSTGRES_PASSWORD")
 	db_port := os.Getenv("POSTGRES_PORT")
 	dsn := fmt.Sprintf("host=%s user=postgres password=%s dbname=moneybot port=%s sslmode=disable TimeZone=Asia/Taipei", db_host, db_pwd, db_port)
-	// fmt.Print(dsn)
+	fmt.Print(dsn)
 	// "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
