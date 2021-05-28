@@ -1,14 +1,26 @@
 version: '3'
 services:
-  influxdb:
-    image: influxdb:2.0
-    volumes:
-      # Mount for influxdb data directory and configuration
-      - ./influxdb:/var/lib/influxdb2
-    ports:
-      - "8087:8086"
-    networks:
+  db:
+    image: postgres
+    restart: always
+    env_file: 
+      - .env
+    environment:
+      POSTGRES_DB: moneybot
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes: 
+        - ./pgdata:/var/lib/postgresql/data
+    ports: 
+      - 5433:5432
+    networks: 
         - web
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - web
   server:
     build: .
     ports: 

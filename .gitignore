@@ -1,4 +1,6 @@
 influxdb
 influxdb/
 influxdb/*
+pgdata/
+pgdata/*
 .env
