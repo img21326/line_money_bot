@@ -43,7 +43,7 @@ type Search struct {
 	Tag   Tag
 	Start time.Time
 	End   time.Time
-	Plus  bool
+	Sum   string
 }
 
 func main() {
@@ -88,42 +88,78 @@ func main() {
 					// log.Printf("Find User: %+v", user)
 					message_arr := strings.Fields(message.Text)
 					log.Printf("Message: %v", message_arr)
+
+					// 如果輸入的在指令集裡面
+					cmds := []string{"today", "今日", "month", "本月", "week", "本週", "year", "今年"}
+					if StringInSlice(message_arr[0], cmds) && len(message_arr) >= 2 {
+						var search Search
+						var start time.Time
+						var end time.Time
+						search.User = user
+						switch message_arr[0] {
+						case "today", "今日":
+							now := time.Now()
+							year, month, day := now.Date()
+							start = time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+							end = time.Date(year, month, day, 23, 59, 59, 59, now.Location())
+						case "week", "本週":
+							start = now.BeginningOfWeek()
+							end = now.EndOfWeek()
+						case "month", "本月":
+							start = now.BeginningOfMonth()
+							end = now.EndOfMonth()
+						case "year", "今年":
+							start = now.BeginningOfYear()
+							end = now.EndOfYear()
+						}
+						search.Start = start
+						search.End = end
+						if len(message_arr) >= 3 {
+							search.Tag.Name = message_arr[2]
+						}
+						search.Sum = message_arr[1]
+						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("總額為: %d", Repo.AdvanceSearch(&search)))).Do(); err != nil {
+							log.Print(err)
+						}
+						return
+					}
+
 					if len(message_arr) == 1 {
-						if message_arr[0] == "餘額" {
+						if message_arr[0] == "餘額" || message_arr[0] == "balance" {
 							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前餘額為: %d", user.Total))).Do(); err != nil {
 								log.Print(err)
 							}
 							return
 						}
-						if message_arr[0] == "今日花費" {
-							now := time.Now()
-							year, month, day := now.Date()
-							start := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
-							end := time.Date(year, month, day, 23, 59, 59, 59, now.Location())
-							total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("今日花費: %d", total))).Do(); err != nil {
-								log.Print(err)
-							}
-							return
-						}
-						if message_arr[0] == "本週花費" {
-							start := now.BeginningOfWeek()
-							end := now.EndOfWeek()
-							total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %d", total))).Do(); err != nil {
-								log.Print(err)
-							}
-							return
-						}
-						if message_arr[0] == "本月花費" {
-							start := now.BeginningOfMonth()
-							end := now.EndOfMonth()
-							total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %d", total))).Do(); err != nil {
-								log.Print(err)
-							}
-							return
-						}
+						// if message_arr[0] == "今日花費" {
+						// 	now := time.Now()
+						// 	year, month, day := now.Date()
+						// 	start := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+						// 	end := time.Date(year, month, day, 23, 59, 59, 59, now.Location())
+						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
+						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("今日花費: %d", total))).Do(); err != nil {
+						// 		log.Print(err)
+						// 	}
+						// 	return
+						// }
+						// if message_arr[0] == "本週花費" {
+						// 	start := now.BeginningOfWeek()
+						// 	end := now.EndOfWeek()
+						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
+						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %d", total))).Do(); err != nil {
+						// 		log.Print(err)
+						// 	}
+						// 	return
+						// }
+						// if message_arr[0] == "本月花費" {
+						// 	start := now.BeginningOfMonth()
+						// 	end := now.EndOfMonth()
+						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
+						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %d", total))).Do(); err != nil {
+						// 		log.Print(err)
+						// 	}
+						// 	return
+						// }
 					}
 
 					// 如果開頭不是+或-
@@ -187,6 +223,15 @@ func Abs(x int64) int64 {
 	return x
 }
 
+func StringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 type Repo struct {
 	db *gorm.DB
 }
@@ -238,10 +283,12 @@ func (r *Repo) GetSumOfAccount(s *Search) int64 {
 	var result AccountResult
 	var err error
 	w := r.db.Model(&Account{}).Select("user_id, sum(amount) as Total").Where("user_id=?", s.User.ID).Where("created_at>?", s.Start).Where("created_at<=?", s.End)
-	if s.Plus {
+	switch s.Sum {
+	case "+":
 		w = w.Where("amount > 0")
-	} else {
+	case "-":
 		w = w.Where("amount < 0")
+	case "sum":
 	}
 	err = w.Group("user_id").Find(&result).Error
 	if err != nil {
@@ -260,10 +307,18 @@ func (r *Repo) GetSumOfTag(s *Search) int64 {
 			ids = append(ids, t.AccountID)
 		}
 		w := r.db.Model(&Account{}).Select("user_id, sum(amount) as Total").Where("user_id=?", s.User.ID).Where("created_at>?", s.Start).Where("created_at<=?", s.End)
-		if s.Plus {
+		// if s.Plus {
+		// 	w = w.Where("amount > 0")
+		// } else {
+		// 	w = w.Where("amount < 0")
+		// }
+		switch s.Sum {
+		case "+":
 			w = w.Where("amount > 0")
-		} else {
+		case "-":
 			w = w.Where("amount < 0")
+		case "sum":
+			w = w
 		}
 		w.Where("id IN ?", ids)
 		err := w.Group("user_id").Find(&result).Error
