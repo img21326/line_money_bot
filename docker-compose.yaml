@@ -1,6 +1,6 @@
 version: '3'
 services:
-  db:
+  db_money_bot:
     image: postgres
     restart: always
     env_file: 
@@ -14,7 +14,7 @@ services:
       - 5433:5432
     networks: 
         - web
-  adminer:
+  adminer_money_bot:
     image: adminer
     restart: always
     ports:
@@ -35,7 +35,7 @@ services:
     networks:
         - web
     depends_on:
-      - db
+      - db_money_bot
 
 networks:
   web:
