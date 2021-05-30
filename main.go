@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -69,6 +70,8 @@ func main() {
 
 	Repo := NewRepo(db)
 
+	reg_date, _ := regexp.Compile("20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])-20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])")
+
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
 		events, err := bot.ParseRequest(req)
 		if err != nil {
@@ -87,12 +90,64 @@ func main() {
 					user := Repo.FindOrCreateUser(event.Source.UserID)
 					// log.Printf("Find User: %+v", user)
 					message_arr := strings.Fields(message.Text)
+					message_arr[0] = strings.ToLower(message_arr[0])
 					log.Printf("Message: %v", message_arr)
 
+					if reg_date.MatchString(message_arr[0]) && len(message_arr) >= 2 {
+						var search Search
+						var start time.Time
+						var end time.Time
+						time_arr := strings.Split(message_arr[0], "-")
+						log.Printf("%+v\n", time_arr)
+						layout := "2006/01/02"
+						start, _ = time.Parse(layout, time_arr[0])
+						end, _ = time.Parse(layout, time_arr[1])
+						end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, end.Location())
+
+						// 結束日小於開始日
+						if end.Before(start) {
+							if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("格式輸入錯誤")).Do(); err != nil {
+								log.Print(err)
+							}
+							return
+						}
+						search.User = user
+						search.End = end
+						search.Start = start
+
+						search.Sum = message_arr[1]
+						if len(message_arr) >= 3 {
+							search.Tag.Name = message_arr[2]
+						}
+						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("總額為: %d", Repo.AdvanceSearch(&search)))).Do(); err != nil {
+							log.Print(err)
+						}
+						return
+					}
 					// 如果輸入的在指令集裡面
-					cmds := []string{"today", "今日", "month", "本月", "week", "本週", "year", "今年"}
+					cmds := []string{"today", "今日", "month", "本月", "week", "本週", "year", "今年", "list", "列表"}
 					if StringInSlice(message_arr[0], cmds) && len(message_arr) >= 2 {
 						var search Search
+						if message_arr[0] == "list" || message_arr[0] == "列表" {
+							if message_arr[1] == "tag" || message_arr[1] == "tags" || message_arr[1] == "標籤" {
+								search.User = user
+								r := Repo.ListTags(&search)
+								var s string
+								for k, i := range r {
+									if k == len(r)-1 {
+										s += fmt.Sprintf("%s", i)
+									} else {
+										s += fmt.Sprintf("%s\n", i)
+									}
+								}
+								if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(s)).Do(); err != nil {
+									log.Print(err)
+								}
+								return
+							}
+						}
+
+						//////////////////// 計算總和 ////////////////////////////
 						var start time.Time
 						var end time.Time
 						search.User = user
@@ -337,4 +392,14 @@ func (r *Repo) AdvanceSearch(s *Search) int64 {
 	} else {
 		return r.GetSumOfAccount(s)
 	}
+}
+
+func (r *Repo) ListTags(s *Search) []string {
+	// search -> User
+	var names []string
+	err := r.db.Model(&Tag{}).Distinct().Where("user_id=?", s.User.ID).Pluck("name", &names).Error
+	if err != nil {
+		log.Printf("Error By ListTags: %+v", err)
+	}
+	return names
 }
