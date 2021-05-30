@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/now"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"gorm.io/driver/postgres"
@@ -72,13 +72,18 @@ func main() {
 
 	reg_date, _ := regexp.Compile("20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])-20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])")
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
-		events, err := bot.ParseRequest(req)
+	r := gin.Default()
+
+	// http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
+	r.POST("/callback", func(c *gin.Context) {
+		events, err := bot.ParseRequest(c.Request)
 		if err != nil {
 			if err == linebot.ErrInvalidSignature {
-				w.WriteHeader(400)
+				// w.WriteHeader(400)
+				c.AbortWithStatus(400)
 			} else {
-				w.WriteHeader(500)
+				// w.WriteHeader(500)
+				c.AbortWithStatus(500)
 			}
 			return
 		}
@@ -186,35 +191,6 @@ func main() {
 							}
 							return
 						}
-						// if message_arr[0] == "今日花費" {
-						// 	now := time.Now()
-						// 	year, month, day := now.Date()
-						// 	start := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
-						// 	end := time.Date(year, month, day, 23, 59, 59, 59, now.Location())
-						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("今日花費: %d", total))).Do(); err != nil {
-						// 		log.Print(err)
-						// 	}
-						// 	return
-						// }
-						// if message_arr[0] == "本週花費" {
-						// 	start := now.BeginningOfWeek()
-						// 	end := now.EndOfWeek()
-						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本週花費: %d", total))).Do(); err != nil {
-						// 		log.Print(err)
-						// 	}
-						// 	return
-						// }
-						// if message_arr[0] == "本月花費" {
-						// 	start := now.BeginningOfMonth()
-						// 	end := now.EndOfMonth()
-						// 	total := Repo.GetSumOfAccount(&Search{User: user, Start: start, End: end})
-						// 	if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("本月花費: %d", total))).Do(); err != nil {
-						// 		log.Print(err)
-						// 	}
-						// 	return
-						// }
 					}
 
 					// 如果開頭不是+或-
@@ -263,12 +239,15 @@ func main() {
 			}
 		}
 	})
+
+	// })
 	// This is just sample code.
 	// For actual use, you must support HTTPS by using `ListenAndServeTLS`, a reverse proxy or something else.
 	log.Printf("Server Start at Port: %s", os.Getenv("PORT"))
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		log.Fatal(err)
-	}
+	// if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
+	// 	log.Fatal(err)
+	// }
+	r.Run(fmt.Sprintf(":%s", os.Getenv("PORT")))
 }
 
 func Abs(x int64) int64 {
