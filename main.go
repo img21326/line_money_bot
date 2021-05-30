@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	gintemplate "github.com/foolin/gin-template"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/now"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
@@ -47,6 +49,12 @@ type Search struct {
 	Sum   string
 }
 
+type ApiTagSum struct {
+	UserId string `json:"user_id"`
+	Year   int    `json:"year"`
+	Month  int    `json:"month"`
+}
+
 func main() {
 	bot, err := linebot.New(
 		os.Getenv("CHANNEL_SECRET"),
@@ -73,6 +81,31 @@ func main() {
 	reg_date, _ := regexp.Compile("20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])-20[0-2][0-9]/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])")
 
 	r := gin.Default()
+	r.HTMLRender = gintemplate.New(gintemplate.TemplateConfig{
+		Root:         "views",
+		Extension:    ".tpl",
+		Master:       "layouts/master",
+		Funcs:        nil,
+		DisableCache: true,
+	})
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index", gin.H{})
+	})
+
+	r.POST("/v1/tags/sum", func(c *gin.Context) {
+		// fake
+		var u ApiTagSum
+		if err := c.BindJSON(&u); err != nil {
+			log.Printf("Tags Sum BindJson err: %+v \n", err)
+			c.AbortWithStatus(400)
+			return
+		}
+		user := Repo.FindOrCreateUser(u.UserId)
+		t := time.Date(u.Year, time.Month(u.Month), 1, 0, 0, 0, 0, time.Now().Location())
+		search := &Search{User: user, Start: t, End: now.With(t).EndOfMonth()}
+		r := Repo.ListTagsSum(search)
+		c.JSON(200, r)
+	})
 
 	// http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
 	r.POST("/callback", func(c *gin.Context) {
@@ -223,6 +256,8 @@ func main() {
 							for _, t := range tags {
 								acc.Tags = append(acc.Tags, Tag{Name: t, UserID: user.ID})
 							}
+						} else {
+							acc.Tags = append(acc.Tags, Tag{Name: "default", UserID: user.ID})
 						}
 
 						err := Repo.CreateAccountAndUpdateUser(&user, &acc)
@@ -381,4 +416,25 @@ func (r *Repo) ListTags(s *Search) []string {
 		log.Printf("Error By ListTags: %+v", err)
 	}
 	return names
+}
+
+type TagSum struct {
+	Name  string `json:"name"`
+	Total int64  `json:"total"`
+}
+
+func (r *Repo) ListTagsSum(s *Search) []TagSum {
+	var rs []TagSum
+	var t TagSum
+	w := r.db.Model(&Tag{}).Select("tags.name, sum(accounts.amount) as Total").Joins("inner join accounts on accounts.id = tags.account_id")
+	w = w.Where("tags.user_id", s.User.ID).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
+	rows, err := w.Group("tags.name").Rows()
+	if err != nil {
+		log.Printf("Error By ListTagsSum: %+v", err)
+	}
+	for rows.Next() {
+		r.db.ScanRows(rows, &t)
+		rs = append(rs, t)
+	}
+	return rs
 }

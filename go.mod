@@ -3,6 +3,7 @@ module moneybot
 go 1.15
 
 require (
+	github.com/foolin/gin-template v0.0.0-20190415034731-41efedfb393b // indirect
 	github.com/gin-gonic/gin v1.7.2 // indirect
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
