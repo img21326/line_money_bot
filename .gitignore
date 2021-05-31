@@ -4,3 +4,4 @@ influxdb/*
 pgdata/
 pgdata/*
 .env
+moneybot
