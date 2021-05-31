@@ -23,6 +23,13 @@ jobs:
       - name: Build binary
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -a -o .
+      - name: Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@2.9
+        with:
+          name: img21326/line_money_bot
+          username: img21326
+          password: ${{ secrets.docker_password }}
+          dockerfile: Dockerfile
       - name: Update the API service
         uses: appleboy/ssh-action@v0.0.6
         with:
@@ -33,5 +40,5 @@ jobs:
           script: |
             cd ~/line_money_bot
             docker-compose down
-            git pull
-            docker-compose up --build -d
+            docker-compose pull
+            docker-compose up -d
