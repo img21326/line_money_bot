@@ -28,6 +28,7 @@ jobs:
           script: |
             cd ~/line_money_bot
             docker-compose down
+            git pull
             export PATH=$PATH:/usr/local/go/bin
             go build .
             docker-compose up --build -d
