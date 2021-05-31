@@ -84,7 +84,7 @@ Index
     };
     var myChart = new Chart(ctx, config);
     $(function () {
-        var liffID = '1656043897-1kg8a3DM';
+        var liffID = '{{.liff_id}}';
 
         liff.init({
             liffId: liffID

@@ -70,6 +70,7 @@ func main() {
 	db_pwd := os.Getenv("POSTGRES_PASSWORD")
 	db_port := os.Getenv("POSTGRES_PORT")
 	dsn := fmt.Sprintf("host=%s user=postgres password=%s dbname=moneybot port=%s sslmode=disable TimeZone=Asia/Taipei", db_host, db_pwd, db_port)
+	liff_tags_sum := os.Getenv("LIFF_INDEX")
 	log.Println(dsn)
 	// "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 	time.Sleep(10 * time.Second)
@@ -88,8 +89,10 @@ func main() {
 		Funcs:        nil,
 		DisableCache: true,
 	})
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index", gin.H{})
+	r.GET("/tags/sum", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index", gin.H{
+			"liff_id": liff_tags_sum,
+		})
 	})
 
 	r.POST("/v1/tags/sum", func(c *gin.Context) {
