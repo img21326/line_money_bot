@@ -1,7 +1,7 @@
 version: '3'
 services:
   db_money_bot:
-    image: postgres
+    image: postgres:13-alpine
     restart: always
     env_file: 
       - .env
@@ -15,7 +15,7 @@ services:
     networks: 
         - web
   adminer_money_bot:
-    image: adminer
+    image: adminer:4.8.0-standalone
     restart: always
     ports:
       - 8081:8080

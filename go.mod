@@ -3,8 +3,8 @@ module moneybot
 go 1.15
 
 require (
-	github.com/foolin/gin-template v0.0.0-20190415034731-41efedfb393b // indirect
-	github.com/gin-gonic/gin v1.7.2 // indirect
+	github.com/foolin/gin-template v0.0.0-20190415034731-41efedfb393b
+	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.3.0
@@ -19,7 +19,7 @@ require (
 	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect
 	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/postgres v1.1.0 // indirect
+	gorm.io/driver/postgres v1.1.0
 	gorm.io/driver/sqlite v1.1.4 // indirect
-	gorm.io/gorm v1.21.10 // indirect
+	gorm.io/gorm v1.21.10
 )
