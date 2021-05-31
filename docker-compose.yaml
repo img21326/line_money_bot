@@ -22,7 +22,7 @@ services:
     networks:
       - web
   server:
-    build: img21326/line_money_bot 
+    build: . 
     ports: 
       - 9090:9090
     env_file: 
