@@ -70,10 +70,10 @@ func main() {
 	db_pwd := os.Getenv("POSTGRES_PASSWORD")
 	db_port := os.Getenv("POSTGRES_PORT")
 	dsn := fmt.Sprintf("host=%s user=postgres password=%s dbname=moneybot port=%s sslmode=disable TimeZone=Asia/Taipei", db_host, db_pwd, db_port)
-	liff_tags_sum := os.Getenv("LIFF_INDEX")
+	liff_tags_sum := os.Getenv("LIFF_TAGSUM")
 	log.Println(dsn)
 	// "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	db.AutoMigrate(&User{}, &Account{}, &Tag{})
 
@@ -90,13 +90,30 @@ func main() {
 		DisableCache: true,
 	})
 	r.GET("/tags/sum", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index", gin.H{
+		c.HTML(http.StatusOK, "tagsum", gin.H{
 			"liff_id": liff_tags_sum,
 		})
 	})
 
+	r.POST("v1/user/total", func(c *gin.Context) {
+		var u ApiTagSum
+		if err := c.BindJSON(&u); err != nil {
+			log.Printf("Tags Sum BindJson err: %+v \n", err)
+			c.AbortWithStatus(400)
+			return
+		}
+		user := Repo.FindOrCreateUser(u.UserId)
+		t := time.Date(u.Year, time.Month(u.Month), 1, 0, 0, 0, 0, time.Now().Location())
+		search := &Search{User: user, Start: t, End: now.With(t).EndOfMonth()}
+		r := Repo.GetSumOfAccount(search)
+		type R struct {
+			Total int64 `json:"total"`
+		}
+
+		c.JSON(200, R{Total: r})
+	})
+
 	r.POST("/v1/tags/sum", func(c *gin.Context) {
-		// fake
 		var u ApiTagSum
 		if err := c.BindJSON(&u); err != nil {
 			log.Printf("Tags Sum BindJson err: %+v \n", err)
