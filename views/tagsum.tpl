@@ -3,34 +3,35 @@ Index
 {{end}}
 
 {{define "content"}}
-<div class="d-flex align-items-center loading">
-    <strong>Loading...</strong>
-    <div class="spinner-border ms-auto" role="status" aria-hidden="true"></div>
+<div class="text-center loading">
+    <a>Loading</a>
 </div>
-<ul class="nav justify-content-center">
-    <li class="nav-item">
-        <a class="nav-link active" aria-current="page" href="#">
-            << </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="#" id="date"></a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="#">>></a>
-    </li>
-    <!-- <li class="nav-item">
+<div class="mainbox">
+    <ul class="nav justify-content-center">
+        <li class="nav-item">
+            <a class="nav-link date-desc" aria-current="page" href="#">
+                << </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" id="date"></a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link date-insc" href="#">>></a>
+        </li>
+        <!-- <li class="nav-item">
         <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
     </li> -->
-</ul>
-<canvas id="myChart" width="300" height="300"></canvas>
-<ul class="list-group mt-3 listbox mainbox">
+    </ul>
+    <canvas id="myChart" width="300" height="300"></canvas>
+    <ul class="list-group mt-3 listbox">
 
-</ul>
+    </ul>
+</div>
+
 
 <script>
     var ctx = document.getElementById('myChart').getContext('2d');
     var dt = new Date();
-    $("#date").html(dt.getFullYear() + "-" + (dt.getMonth() + 1))
     const color = [{
             bdc: 'rgba(255, 99, 132, 1)',
             bgc: 'rgba(255, 99, 132, 0.2)',
@@ -73,6 +74,7 @@ Index
         },
     };
     var myChart = new Chart(ctx, config);
+    var userId = "";
     $(function() {
         $(".mainbox").hide();
         var liffID = '{{.liff_id}}';
@@ -84,39 +86,66 @@ Index
             console.log('LIFF init');
             liff.getProfile().then(user => {
                 console.log(user.userId);
+                userId = user.userId;
                 // getData(user.userId, dt.getFullYear(), dt.getMonth() + 1)
-                Promise.all([getData(user.userId, dt.getFullYear(), dt.getMonth() + 1),
-                    getTotal(user.userId, dt.getFullYear(), dt.getMonth() + 1)
-                ]).then(values => {
-                    $.each(values[0], (index, data) => {
-                        $(".listbox").append(
-                            `<li class="list-group-item d-flex justify-content-between align-items-center">
-${data.name}
-<span class="badge bg-primary rounded-pill">$ ${data.total}</span>
-                                                    </li>`
-                        );
-                        config.data.datasets.push({
-                            label: data.name,
-                            data: [data.total],
-                            borderColor: color[index % 5].bdc,
-                            backgroundColor: color[index % 5].bgc,
-                        })
-                        myChart.update()
-                    });
-                    $(".listbox").append(
-                        `<li class="list-group-item d-flex justify-content-between align-items-center list-group-item-secondary">
-Total
-<span class="badge bg-primary rounded-pill">$ ${values[1].total}</span>
-                                                    </li>`
-                    );
-                    $(".loading").remove("");
-                    $(".mainbox").show();
-                })
+                fetchAll(user.userId, dt.getFullYear(), dt.getMonth() + 1);
             })
         }).catch(function(error) {
             console.log(error);
         });
     });
+    $(".date-desc").click(() => {
+        dt = new Date(dt.setMonth(dt.getMonth() - 1));
+        fetchAll(userId, dt.getFullYear(), dt.getMonth() + 1);
+    });
+
+    $(".date-insc").click(() => {
+        dt = new Date(dt.setMonth(dt.getMonth() + 1));
+        fetchAll(userId, dt.getFullYear(), dt.getMonth() + 1);
+    });
+
+    function loading() {
+        $(".loading").fadeIn()
+        $(".mainbox").fadeOut()
+    }
+
+    function closeloading() {
+        $(".loading").fadeOut()
+        $(".mainbox").fadeIn()
+    }
+
+    function fetchAll(userId, year, month) {
+        $("#date").html(year + "-" + month);
+        loading()
+        Promise.all([getData(userId, year, month),
+            getTotal(userId, year, month)
+        ]).then(values => {
+            $(".listbox").html("")
+            config.data.datasets = []
+            $.each(values[0], (index, data) => {
+                $(".listbox").append(
+                    `<li class="list-group-item d-flex justify-content-between align-items-center">
+${data.name}
+<span class="badge bg-primary rounded-pill">$ ${data.total}</span>
+                                                    </li>`
+                );
+                config.data.datasets.push({
+                    label: data.name,
+                    data: [data.total],
+                    borderColor: color[index % 5].bdc,
+                    backgroundColor: color[index % 5].bgc,
+                })
+                myChart.update()
+            });
+            $(".listbox").append(
+                `<li class="list-group-item d-flex justify-content-between align-items-center list-group-item-secondary">
+Total
+<span class="badge bg-primary rounded-pill">$ ${values[1].total}</span>
+                                                    </li>`
+            );
+            closeloading()
+        })
+    }
 
     function getData(userId, year, month) {
         return new Promise(function(resolve, reject) {

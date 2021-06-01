@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -49,8 +50,9 @@ type Search struct {
 	Sum   string
 }
 
-type ApiTagSum struct {
+type ApiSum struct {
 	UserId string `json:"user_id"`
+	Tag    string `json:"tag"`
 	Year   int    `json:"year"`
 	Month  int    `json:"month"`
 }
@@ -73,7 +75,7 @@ func main() {
 	liff_tags_sum := os.Getenv("LIFF_TAGSUM")
 	log.Println(dsn)
 	// "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
-	// time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Second)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	db.AutoMigrate(&User{}, &Account{}, &Tag{})
 
@@ -96,7 +98,7 @@ func main() {
 	})
 
 	r.POST("v1/user/total", func(c *gin.Context) {
-		var u ApiTagSum
+		var u ApiSum
 		if err := c.BindJSON(&u); err != nil {
 			log.Printf("Tags Sum BindJson err: %+v \n", err)
 			c.AbortWithStatus(400)
@@ -114,7 +116,7 @@ func main() {
 	})
 
 	r.POST("/v1/tags/sum", func(c *gin.Context) {
-		var u ApiTagSum
+		var u ApiSum
 		if err := c.BindJSON(&u); err != nil {
 			log.Printf("Tags Sum BindJson err: %+v \n", err)
 			c.AbortWithStatus(400)
@@ -123,7 +125,24 @@ func main() {
 		user := Repo.FindOrCreateUser(u.UserId)
 		t := time.Date(u.Year, time.Month(u.Month), 1, 0, 0, 0, 0, time.Now().Location())
 		search := &Search{User: user, Start: t, End: now.With(t).EndOfMonth()}
-		r := Repo.ListTagsSum(search)
+		r := Repo.TagsSum(search)
+		c.JSON(200, r)
+	})
+
+	r.POST("/v1/days/sum", func(c *gin.Context) {
+		var u ApiSum
+		if err := c.BindJSON(&u); err != nil {
+			log.Printf("Tags Sum BindJson err: %+v \n", err)
+			c.AbortWithStatus(400)
+			return
+		}
+		user := Repo.FindOrCreateUser(u.UserId)
+		t := time.Date(u.Year, time.Month(u.Month), 1, 0, 0, 0, 0, time.Now().Location())
+		search := &Search{User: user, Start: t, End: now.With(t).EndOfMonth()}
+		if u.Tag != "" {
+			search.Tag = Tag{Name: u.Tag}
+		}
+		r := Repo.DayOfSum(search)
 		c.JSON(200, r)
 	})
 
@@ -443,7 +462,7 @@ type TagSum struct {
 	Total int64  `json:"total"`
 }
 
-func (r *Repo) ListTagsSum(s *Search) []TagSum {
+func (r *Repo) TagsSum(s *Search) []TagSum {
 	var rs []TagSum
 	var t TagSum
 	w := r.db.Model(&Tag{}).Select("tags.name, sum(accounts.amount) as Total").Joins("inner join accounts on accounts.id = tags.account_id")
@@ -455,6 +474,36 @@ func (r *Repo) ListTagsSum(s *Search) []TagSum {
 	for rows.Next() {
 		r.db.ScanRows(rows, &t)
 		rs = append(rs, t)
+	}
+	return rs
+}
+
+type DaySum struct {
+	Day   time.Time `json:"day"`
+	Total int64     `json:"total"`
+}
+
+func (r *Repo) DayOfSum(s *Search) []DaySum {
+	var rs []DaySum
+	var rr DaySum
+	var rows *sql.Rows
+	var err error
+	if s.Tag.Name != "" {
+		w := r.db.Model(&Tag{}).Select("date_trunc('day',accounts.created_at) as \"Day\", sum(accounts.amount) as \"Total\"").Joins("inner join accounts on accounts.id = tags.account_id")
+		w = w.Where("tags.user_id", s.User.ID).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
+		rows, err = w.Where("tags.name", s.Tag.Name).Group("Day").Rows()
+	} else {
+		w := r.db.Model(&Account{}).Select("date_trunc('day',created_at) as \"Day\", sum(amount) as \"Total\"")
+		w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Group("Day")
+		rows, err = w.Rows()
+	}
+	if err != nil {
+		log.Printf("Error By DayOfSum: %+v \n", err)
+		return rs
+	}
+	for rows.Next() {
+		r.db.ScanRows(rows, &rr)
+		rs = append(rs, rr)
 	}
 	return rs
 }
