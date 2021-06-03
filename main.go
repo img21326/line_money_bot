@@ -29,8 +29,9 @@ type User struct {
 
 type Account struct {
 	gorm.Model
-	Amount int   `json:"amount"`
-	Tags   []Tag `json:"tags"`
+	Amount int    `json:"amount"`
+	Tags   []Tag  `json:"tags"`
+	Cate   string `json: "cate"`
 	UserID uint
 }
 
@@ -295,9 +296,10 @@ func main() {
 							for _, t := range tags {
 								acc.Tags = append(acc.Tags, Tag{Name: t, UserID: user.ID})
 							}
-						} else {
-							acc.Tags = append(acc.Tags, Tag{Name: "default", UserID: user.ID})
 						}
+						// else {
+						// 	acc.Tags = append(acc.Tags, Tag{Name: "default", UserID: user.ID})
+						// }
 
 						err := Repo.CreateAccountAndUpdateUser(&user, &acc)
 						if err != nil {
@@ -467,7 +469,7 @@ func (r *Repo) TagsSum(s *Search) []TagSum {
 	var t TagSum
 	w := r.db.Model(&Tag{}).Select("tags.name, sum(accounts.amount) as Total").Joins("inner join accounts on accounts.id = tags.account_id")
 	w = w.Where("tags.user_id", s.User.ID).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
-	rows, err := w.Group("tags.name").Rows()
+	rows, err := w.Group("tags.name").Order("Total").Rows()
 	if err != nil {
 		log.Printf("Error By ListTagsSum: %+v", err)
 	}
@@ -491,10 +493,10 @@ func (r *Repo) DayOfSum(s *Search) []DaySum {
 	if s.Tag.Name != "" {
 		w := r.db.Model(&Tag{}).Select("date_trunc('day',accounts.created_at) as \"Day\", sum(accounts.amount) as \"Total\"").Joins("inner join accounts on accounts.id = tags.account_id")
 		w = w.Where("tags.user_id", s.User.ID).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
-		rows, err = w.Where("tags.name", s.Tag.Name).Group("Day").Rows()
+		rows, err = w.Where("tags.name", s.Tag.Name).Group("Day").Order("Day").Rows()
 	} else {
 		w := r.db.Model(&Account{}).Select("date_trunc('day',created_at) as \"Day\", sum(amount) as \"Total\"")
-		w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Group("Day")
+		w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Group("Day").Order("Day")
 		rows, err = w.Rows()
 	}
 	if err != nil {
