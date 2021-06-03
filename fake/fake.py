@@ -27,9 +27,9 @@ date_list = [(start_date + datetime.timedelta(days=day)).isoformat()
 fake_name = []
 fake_cate = ['default']
 for i in range(5):
-    fake_name.append(fake.name())
+    fake_name.append(fake.name().replace(" ", ""))
 for i in range(2):
-    fake_cate.append(fake.name())
+    fake_cate.append(fake.name().replace(" ", ""))
 
 insert_data = []
 for d in date_list:
