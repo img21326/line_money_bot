@@ -187,7 +187,8 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 					}
 					if len(message_arr) > 1 {
 						tags := strings.Split(message_arr[1], ",")
-						for _, t := range tags {
+						acc.Cate = tags[0]
+						for _, t := range tags[1:] {
 							acc.Tags = append(acc.Tags, repo.Tag{Name: t, UserID: user.ID})
 						}
 					}

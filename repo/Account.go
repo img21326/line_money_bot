@@ -38,6 +38,22 @@ func (r *AccountRepo) Sum(user_id uint, s utils.Select) (i int64, err error) {
 	return result.Total, err
 }
 
+func (r *AccountRepo) ListMonthOfCateSum(user_id uint, s utils.Select) (name_sum []utils.NameOfSum, err error) {
+	var rr utils.NameOfSum
+	w := r.db.Model(&Account{}).Select("cate as name, sum(amount) as total")
+	w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
+	rows, err := w.Group("name").Rows()
+	if err != nil {
+		log.Printf("Error By ListMonthCateSum: %+v", err)
+	}
+	for rows.Next() {
+		r.db.ScanRows(rows, &rr)
+		name_sum = append(name_sum, rr)
+	}
+	return
+
+}
+
 func (r *AccountRepo) ListDayOfSum(user_id uint, s utils.Select) (day_sum []utils.DaySum, err error) {
 	var rr utils.DaySum
 	w := r.db.Model(&Account{}).Select("date_trunc('day',created_at) as \"Day\", sum(amount) as \"Total\"")

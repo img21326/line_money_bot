@@ -124,10 +124,10 @@ Index
             config.data.datasets = []
             $.each(values[0], (index, data) => {
                 $(".listbox").append(
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-${data.name}
-<span class="badge bg-primary rounded-pill">$ ${data.total}</span>
-                                                    </li>`
+                    `<li class="list-group-item d-flex justify-content-between align-items-center list-click" data-cate="${data.name}">
+                    ${data.name}
+                    <span class="badge bg-primary rounded-pill">$ ${data.total}</span>`
+                    +`</li>`
                 );
                 config.data.datasets.push({
                     label: data.name,
@@ -150,7 +150,7 @@ Total
     function getData(userId, year, month) {
         return new Promise(function(resolve, reject) {
             $.ajax({
-                url: "/v1/tags/month/sum",
+                url: "/v1/acc/month/list/cate/sum",
                 type: "POST",
                 cache: false,
                 dataType: 'json',
@@ -197,5 +197,19 @@ Total
             });
         })
     }
+
+    $(".listbox").on("click", ".list-click", function(event) {
+        location.replace('https://liff.line.me/1656043897-9D43MLRP?cate=' + $(this).attr('data-cate'));
+    });
+
+    document.getElementById("myChart").onclick = function(evt) {
+        // var activePoints = myChart.getElementsAtEventForMode(evt, 'point', myChart.options);
+        // var firstPoint = activePoints[0];
+        // var clickCateName = config.data.datasets[firstPoint.datasetIndex].label;
+        // location.replace('/acc/list/day/sum?cate=' + clickCateName);
+        // var label = myChart.data.labels[firstPoint._index];
+        // var value = myChart.data.datasets[firstPoint._datasetIndex].data[firstPoint._index];
+        // alert(label + ": " + value);
+    };
 </script>
 {{end}}

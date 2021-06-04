@@ -55,7 +55,7 @@ Index
     ]
 
     var config = {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: ['money'],
             datasets: []
@@ -68,13 +68,15 @@ Index
                 },
                 title: {
                     display: true,
-                    text: '月總和'
+                    text: '單日總額'
                 }
             }
         },
     };
     var myChart = new Chart(ctx, config);
     var userId = "";
+    var cate = "{{.cate}}";
+    // alert(cate);
     $(function() {
         $(".mainbox").hide();
         var liffID = '{{.liff_id}}';
@@ -115,34 +117,41 @@ Index
     }
 
     function fetchAll(userId, year, month) {
-        $("#date").html(year + "-" + month);
-        loading()
-        Promise.all([getData(userId, year, month),
-            getTotal(userId, year, month)
-        ]).then(values => {
-            $(".listbox").html("")
-            config.data.datasets = []
+        $("#date").html(`${year}-${month} (${cate})`);
+        loading();
+        Promise.all([getData(userId, year, month)]).then(values => {
+            $(".listbox").html("");
+            config.data.datasets = [];
             $.each(values[0], (index, data) => {
+                data.day = new Date(data.day);
+            });
+            var byDate = values[0].slice(0)
+            byDate.sort(function(a, b) {
+                return a.day - b.day;
+            })
+            var labels = [];
+            var values = [];
+            $.each(byDate, (index, data) => {
+                console.log(data.day);
                 $(".listbox").append(
                     `<li class="list-group-item d-flex justify-content-between align-items-center">
-${data.name}
+${data.day.getFullYear()}-${data.day.getMonth() + 1}-${data.day.getDate()}
 <span class="badge bg-primary rounded-pill">$ ${data.total}</span>
                                                     </li>`
                 );
-                config.data.datasets.push({
-                    label: data.name,
-                    data: [data.total],
-                    borderColor: color[index % 5].bdc,
-                    backgroundColor: color[index % 5].bgc,
-                })
-                myChart.update()
+                labels.push(`${data.day.getFullYear()}-${data.day.getMonth() + 1}-${data.day.getDate()}`);
+                values.push(data.total);
             });
-            $(".listbox").append(
-                `<li class="list-group-item d-flex justify-content-between align-items-center list-group-item-secondary">
-Total
-<span class="badge bg-primary rounded-pill">$ ${values[1].total}</span>
-                                                    </li>`
-            );
+            console.log(values);
+            config.data.labels = labels;
+            config.data.datasets.push({
+                label: 'Money',
+                data: values,
+                fill: true,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            })
+            myChart.update()
             closeloading()
         })
     }
@@ -150,7 +159,7 @@ Total
     function getData(userId, year, month) {
         return new Promise(function(resolve, reject) {
             $.ajax({
-                url: "/v1/tags/month/sum",
+                url: "/v1/acc/days/list/sum",
                 type: "POST",
                 cache: false,
                 dataType: 'json',
@@ -158,6 +167,7 @@ Total
                     "user_id": userId,
                     "year": year,
                     "month": month,
+                    "cate": cate,
                 }),
                 contentType: "application/json",
                 success: (res) => {
@@ -173,29 +183,13 @@ Total
         })
     }
 
-    function getTotal(userId, year, month) {
-        return new Promise(function(resolve, reject) {
-            $.ajax({
-                url: "/v1/acc/month/sum",
-                type: "POST",
-                cache: false,
-                dataType: 'json',
-                data: JSON.stringify({
-                    "user_id": userId,
-                    "year": year,
-                    "month": month,
-                }),
-                contentType: "application/json",
-                success: (res) => {
-                    resolve(res);
-                },
-                error: function(xhr, ajaxOptions, thrownError) {
-                    console.log(xhr.status);
-                    console.log(thrownError);
-                    reject(xhr);
-                }
-            });
-        })
-    }
+    // document.getElementById("myChart").onclick = function(evt) {
+    // var activePoints = myChart.getElementsAtEventForMode(evt, 'point', myChart.options);
+    // var firstPoint = activePoints[0];
+    // var clickCateName = config.data.datasets[firstPoint.datasetIndex].label;
+    // var label = myChart.data.labels[firstPoint._index];
+    // var value = myChart.data.datasets[firstPoint._datasetIndex].data[firstPoint._index];
+    // alert(label + ": " + value);
+    // };
 </script>
 {{end}}
