@@ -9,6 +9,8 @@ import (
 type Select struct {
 	Start time.Time
 	End   time.Time
+	Cate  string
+	Tag   string
 	Sum   string
 }
 

@@ -38,10 +38,14 @@ func (r *AccountRepo) Sum(user_id uint, s utils.Select) (i int64, err error) {
 	return result.Total, err
 }
 
-func (r *AccountRepo) ListDayOfSum(user_id string, s utils.Select) (day_sum []utils.DaySum, err error) {
+func (r *AccountRepo) ListDayOfSum(user_id uint, s utils.Select) (day_sum []utils.DaySum, err error) {
 	var rr utils.DaySum
 	w := r.db.Model(&Account{}).Select("date_trunc('day',created_at) as \"Day\", sum(amount) as \"Total\"")
-	w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Group("Day").Order("Day")
+	w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
+	if s.Cate != "" {
+		w = w.Where("cate = ?", s.Cate)
+	}
+	w = w.Group("Day")
 	rows, err := w.Rows()
 	for rows.Next() {
 		r.db.ScanRows(rows, &rr)
