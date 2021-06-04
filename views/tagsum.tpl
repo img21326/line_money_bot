@@ -150,7 +150,7 @@ Total
     function getData(userId, year, month) {
         return new Promise(function(resolve, reject) {
             $.ajax({
-                url: "/v1/tags/sum",
+                url: "/v1/tags/month/sum",
                 type: "POST",
                 cache: false,
                 dataType: 'json',
@@ -176,7 +176,7 @@ Total
     function getTotal(userId, year, month) {
         return new Promise(function(resolve, reject) {
             $.ajax({
-                url: "/v1/user/total",
+                url: "/v1/user/month/sum",
                 type: "POST",
                 cache: false,
                 dataType: 'json',

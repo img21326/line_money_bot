@@ -55,7 +55,7 @@ func (r *TagRepo) List(user_id uint) (names []string, err error) {
 	return names, err
 }
 
-func (r *TagRepo) ListNameOfSum(user_id string, s utils.Select) (tags_sum []utils.NameOfSum, err error) {
+func (r *TagRepo) ListNameOfSum(user_id uint, s utils.Select) (tags_sum []utils.NameOfSum, err error) {
 	var t utils.NameOfSum
 	w := r.db.Model(&Tag{}).Select("tags.name, sum(accounts.amount) as Total").Joins("inner join accounts on accounts.id = tags.account_id")
 	w = w.Where("tags.user_id", user_id).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
@@ -70,7 +70,7 @@ func (r *TagRepo) ListNameOfSum(user_id string, s utils.Select) (tags_sum []util
 	return
 }
 
-func (r *TagRepo) ListDayOfSum(user_id string, tag_name string, s utils.Select) (day_sum []utils.DaySum, err error) {
+func (r *TagRepo) ListDayOfSum(user_id uint, tag_name string, s utils.Select) (day_sum []utils.DaySum, err error) {
 	var rr utils.DaySum
 	w := r.db.Model(&Tag{}).Select("date_trunc('day',accounts.created_at) as \"Day\", sum(accounts.amount) as \"Total\"").Joins("inner join accounts on accounts.id = tags.account_id")
 	w = w.Where("tags.user_id", user_id).Where("tags.created_at>?", s.Start).Where("tags.created_at<=?", s.End)
