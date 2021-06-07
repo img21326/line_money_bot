@@ -30,7 +30,7 @@ func main() {
 	log.Println(dsn)
 	// time.Sleep(10 * time.Second)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	db.AutoMigrate(&repo.User{}, &repo.Account{}, &repo.Tag{})
+	db.AutoMigrate(&repo.User{}, &repo.Account{}, &repo.Tag{}, &repo.Cate{})
 
 	r := gin.Default()
 	r.HTMLRender = gintemplate.New(gintemplate.TemplateConfig{
