@@ -7,6 +7,12 @@ Index
     <a>Loading</a>
 </div>
 <div class="mainbox">
+    <select class="form-select" aria-label="Default select example">
+        <option selected>Open this select menu</option>
+        <option value="1">One</option>
+        <option value="2">Two</option>
+        <option value="3">Three</option>
+    </select>
     <ul class="nav justify-content-center">
         <li class="nav-item">
             <a class="nav-link date-desc" aria-current="page" href="#">
@@ -119,8 +125,8 @@ Index
                     `<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
 data-bs-target="#panelsStayOpen-collapse${index}" aria-expanded="false"
 aria-controls="panelsStayOpen-collapse${index}">
-<span class="badge rounded-pill bg-info text-dark">${data.day.getFullYear()}-${data.day.getMonth()+1}-${data.day.getDate()}</span>
-<span class="badge rounded-pill bg-light text-dark">$${data.total}</span>
+<span class="badge rounded-pill bg-primary">${data.day.getFullYear()}-${addZero(data.day.getMonth()+1)}-${addZero(data.day.getDate())}</span>
+<span class="badge rounded-pill bg-secondary">$${data.total}</span>
                                     </button>
                                 </h2>
 <div id="panelsStayOpen-collapse${index}" class="accordion-collapse collapse"
@@ -157,22 +163,53 @@ aria-labelledby="panelsStayOpen-heading${index}">
                     //     </tbody>
                     // </table>
                 );
-                labels.push(`${data.day.getFullYear()}-${data.day.getMonth() + 1}-${data.day.getDate()}`);
+                labels.push(`${data.day.getFullYear()}-${addZero(data.day.getMonth() + 1)}-${addZero(data.day.getDate())}`);
                 values.push(data.total);
             });
             console.log(values);
             config.data.labels = labels;
+
             config.data.datasets.push({
-                label: 'Money',
+                label: '今日額度',
                 data: values,
                 fill: true,
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                tension: 0.1
+                type: 'bar',
+                stack: 'combined',
+            })
+
+            var sum = 0
+            var nv = []
+            $.each(values, (i, v) => {
+                sum += v
+                nv.push(sum)
+            })
+
+            config.data.datasets.push({
+                label: '總額度',
+                data: nv,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                stack: 'combined',
             })
             myChart.update()
             closeloading()
         })
+    }
+
+    function addZero(s) {
+        if (s.toString().length == 1) {
+            return "0" + s.toString()
+        }
+        return s
+    }
+
+    function printTags(tags) {
+        var html = ""
+        $.each(tags, (index, tag) => {
+            html += `<span class="badge rounded-pill bg-info text-dark">${tag}</span>`
+        })
+        return html
     }
 
     $("#accordionPanelsStayOpenExample").on("click", ".accordion-item", function(event) {
@@ -187,13 +224,13 @@ aria-labelledby="panelsStayOpen-heading${index}">
                 console.log(value.length > 0)
                 if (value.length > 0) {
                     html_ =
-                        `<table class="table"><thead><tr><th scope="col">Date</th><th scope="col">Total</th><th scope="col">Tags</th></tr></thead><tbody>`
+                        `<table class="table" style="width:100%;word-break:break-all; word-wrap:break-all;"><thead><tr><th scope="col">Date</th><th scope="col">Total</th><th scope="col">Tags</th></tr></thead><tbody>`
                     $.each(value, (index, data) => {
                         var d = new Date(data.created_at)
                         html_ += `<tr>
-<th scope="row">${d.getHours()}:${d.getMinutes()}</th>
-<td>${data.amount}</td>
-<td>${data.tags.join()}</td>
+<th scope="row" style="width:30%;">${addZero(d.getHours())}:${addZero(d.getMinutes())}</th>
+<td style="width:30%;">${data.amount}</td>
+<td style="width:40%;">${printTags(data.tags)}</td>
                              </tr>`
 
                     })

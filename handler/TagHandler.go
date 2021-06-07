@@ -23,7 +23,7 @@ func NewTagHandler(e *gin.Engine, u repo.UserRepo, t repo.TagRepo) {
 		TagRepo:  t,
 	}
 
-	e.GET("/tags/sum", handler.ShowTagsOfSumPage)
+	e.GET("/tag/list/name/sum", handler.ShowTagsOfSumPage)
 	e.POST("/v1/tags/month/sum", handler.MonthOfSum)
 }
 

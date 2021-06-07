@@ -10,10 +10,10 @@ import (
 
 type Account struct {
 	gorm.Model
-	Amount int    `json:"amount"`
-	Tags   []Tag  `json:"tags"`
-	Cate   string `json: "cate"`
+	Amount int   `json:"amount"`
+	Tags   []Tag `json:"tags"`
 	UserID uint
+	CateID uint
 }
 
 type AccountRepo struct {
@@ -40,8 +40,9 @@ func (r *AccountRepo) Sum(user_id uint, s utils.Select) (i int64, err error) {
 
 func (r *AccountRepo) ListMonthOfCateSum(user_id uint, s utils.Select) (name_sum []utils.NameOfSum, err error) {
 	var rr utils.NameOfSum
-	w := r.db.Model(&Account{}).Select("cate as name, sum(amount) as total")
-	w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
+	// w := r.db.Model(&Account{}).Select("cate as name, sum(amount) as total")
+	w := r.db.Model(&Account{}).Select("cates.name as name, sum(accounts.amount) as Total").Joins("inner join cates on accounts.cate_id = cates.id")
+	w = w.Where("accounts.created_at > ?", s.Start).Where("accounts.created_at <= ?", s.End)
 	rows, err := w.Group("name").Rows()
 	if err != nil {
 		log.Printf("Error By ListMonthCateSum: %+v", err)
@@ -59,7 +60,14 @@ func (r *AccountRepo) ListDayOfSum(user_id uint, s utils.Select) (day_sum []util
 	w := r.db.Model(&Account{}).Select("date_trunc('day',created_at) as \"Day\", sum(amount) as \"Total\"")
 	w = w.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
 	if s.Cate != "" {
-		w = w.Where("cate = ?", s.Cate)
+		var cate Cate
+		err = r.db.Model(&Cate{}).Where("name", s.Cate).Find(&cate).Error
+		log.Printf("%+v \n", cate)
+		if err == nil || cate.ID != 0 {
+			w = w.Where("cate_id = ?", cate.ID)
+		} else {
+			log.Printf("ListDayOfSum Find Cate Err: %+v", err)
+		}
 	}
 	w = w.Group("Day")
 	rows, err := w.Rows()
@@ -73,7 +81,14 @@ func (r *AccountRepo) ListDayOfSum(user_id uint, s utils.Select) (day_sum []util
 func (r *AccountRepo) ListDayOfInfo(user_id uint, s utils.Select) (accs []Account, err error) {
 	w := r.db.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
 	if s.Cate != "" {
-		w = w.Where("cate = ?", s.Cate)
+		var cate Cate
+		err = r.db.Model(&Cate{}).Where("name", s.Cate).Find(&cate).Error
+		log.Printf("%+v \n", cate)
+		if err == nil || cate.ID != 0 {
+			w = w.Where("cate_id = ?", cate.ID)
+		} else {
+			log.Printf("ListDayOfSum Find Cate Err: %+v", err)
+		}
 	}
 	w = w.Where("user_id = ?", user_id)
 	err = w.Preload("Tags").Find(&accs).Error

@@ -25,7 +25,7 @@ date_list = [(start_date + datetime.timedelta(days=day)).isoformat()
 
 # fake_name = ['default']
 fake_name = []
-fake_cate = ['default', 'eat', 'game', 'life']
+fake_cate = ['eat', 'game', 'life']
 for i in range(5):
     fake_name.append(fake.name().replace(" ", ""))
 # for i in range(2):
@@ -41,18 +41,23 @@ for d in date_list:
             random.randint(-300, 300),
             'user_id':
             1,
-            'cate':
-            random.sample(fake_cate, 1),
+            'cate_id':
+            random.randint(1, 4),
             'tags':
             random.sample(fake_name, random.randint(1, 3)),
             'date':
             d,
         })
 
+for i in fake_cate:
+    cur.execute(
+        f"INSERT INTO cates (name, total, user_id) VALUES ('{i}', 0, 1)")
+    conn.commit()
+
 for i in insert_data:
     print(i)
     cur.execute(
-        f"INSERT INTO accounts (created_at, amount, user_id, cate) VALUES ('{i['date']}',{i['amount']}, {i['user_id']}, '{i['cate'][0]}') RETURNING id"
+        f"INSERT INTO accounts (created_at, amount, user_id, cate_id) VALUES ('{i['date']}',{i['amount']}, {i['user_id']}, '{i['cate_id']}') RETURNING id"
     )
     id = cur.fetchone()[0]
     # print(id)

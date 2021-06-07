@@ -20,14 +20,16 @@ type LineHandler struct {
 	UserRepo    repo.UserRepo
 	TagRepo     repo.TagRepo
 	AccountRepo repo.AccountRepo
+	CateRepo    repo.CateRepo
 }
 
-func NewLineHandler(e *gin.Engine, l *linebot.Client, u repo.UserRepo, t repo.TagRepo, a repo.AccountRepo) {
+func NewLineHandler(e *gin.Engine, l *linebot.Client, u repo.UserRepo, t repo.TagRepo, a repo.AccountRepo, c repo.CateRepo) {
 	handler := &LineHandler{
 		LineClient:  l,
 		UserRepo:    u,
 		TagRepo:     t,
 		AccountRepo: a,
+		CateRepo:    c,
 	}
 
 	e.POST("line/callback", handler.CallBack)
@@ -114,6 +116,22 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 							}
 							return
 						}
+
+						if message_arr[1] == "cate" || message_arr[1] == "cates" || message_arr[1] == "類別" {
+							r, err := h.CateRepo.List(user.ID)
+							var s string
+							for k, i := range r {
+								if k == len(r)-1 {
+									s += fmt.Sprintf("%s", i)
+								} else {
+									s += fmt.Sprintf("%s\n", i)
+								}
+							}
+							if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(s)).Do(); err != nil {
+								log.Print(err)
+							}
+							return
+						}
 					}
 
 					//////////////////// 計算總和 ////////////////////////////
@@ -151,13 +169,18 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 					return
 				}
 
-				if len(message_arr) == 1 {
-					if message_arr[0] == "餘額" || message_arr[0] == "balance" {
-						if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前餘額為: %d", user.Total))).Do(); err != nil {
-							log.Print(err)
-						}
-						return
+				if message_arr[0] == "餘額" || message_arr[0] == "balance" {
+					var cate_name string
+					if len(message_arr) == 1 {
+						cate_name = "default"
+					} else {
+						cate_name = message_arr[1]
 					}
+					r, err := h.CateRepo.Total(user.ID, cate_name)
+					if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前 %s 餘額為: %d", cate_name, r.Total))).Do(); err != nil {
+						log.Print(err)
+					}
+					return
 				}
 
 				// 如果開頭不是+或-
@@ -180,6 +203,7 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 
 				// Create
 				amount, _ := strconv.Atoi(message_arr[0])
+				var cate repo.Cate
 				if amount != 0 {
 					acc := repo.Account{
 						Amount: amount,
@@ -187,22 +211,24 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 					}
 					if len(message_arr) > 1 {
 						tags := strings.Split(message_arr[1], ",")
-						acc.Cate = tags[0]
+						cate = repo.Cate{Name: tags[0]}
 						for _, t := range tags[1:] {
 							acc.Tags = append(acc.Tags, repo.Tag{Name: t, UserID: user.ID})
 						}
+					} else {
+						cate = repo.Cate{Name: "default"}
 					}
-					// else {
-					// 	acc.Tags = append(acc.Tags, Tag{Name: "default", UserID: user.ID})
-					// }
 
-					err := h.UserRepo.CreateAccountAndUpdateUser(user, &acc)
+					err := h.UserRepo.CreateAccountAndUpdateUser(user, &acc, &cate)
 					if err != nil {
 						log.Print("Create Account Error: %+v", err)
 						return
 					}
+				} else {
+					cate.Name = "default"
 				}
-				if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前餘額為: %d", user.Total))).Do(); err != nil {
+				r, err := h.CateRepo.Total(user.ID, cate.Name)
+				if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前 %s 餘額為: %d", cate.Name, r.Total))).Do(); err != nil {
 					log.Print(err)
 				}
 				return

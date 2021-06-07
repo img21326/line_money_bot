@@ -199,7 +199,7 @@ Total
     }
 
     $(".listbox").on("click", ".list-click", function(event) {
-        location.replace('https://liff.line.me/1656043897-9D43MLRP?cate=' + $(this).attr('data-cate'));
+        location.replace('/acc/list/day/sum?cate=' + $(this).attr('data-cate'));
     });
 
     document.getElementById("myChart").onclick = function(evt) {

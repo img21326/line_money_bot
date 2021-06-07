@@ -44,8 +44,9 @@ func main() {
 	repo_acc := repo.NewAccountRepo(db)
 	repo_tag := repo.NewTagRepo(db)
 	repo_user := repo.NewUserRepo(db)
+	repo_cate := repo.NewCateRepo(db)
 
-	handler.NewLineHandler(r, bot, *repo_user, *repo_tag, *repo_acc)
+	handler.NewLineHandler(r, bot, *repo_user, *repo_tag, *repo_acc, *repo_cate)
 	handler.NewTagHandler(r, *repo_user, *repo_tag)
 	handler.NewUserHandler(r, *repo_user, *repo_acc)
 	handler.NewAccHandler(r, *repo_user, *repo_acc)
