@@ -118,16 +118,17 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 						}
 
 						if message_arr[1] == "cate" || message_arr[1] == "cates" || message_arr[1] == "類別" {
-							r, err := h.CateRepo.List(user.ID)
-							var s string
+							s := utils.Select{Start: now.BeginningOfMonth(), End: now.EndOfMonth()}
+							r, err := h.CateRepo.List(user.ID, s)
+							var str_ string
 							for k, i := range r {
 								if k == len(r)-1 {
-									s += fmt.Sprintf("%s", i)
+									str_ += fmt.Sprintf("%s", i)
 								} else {
-									s += fmt.Sprintf("%s\n", i)
+									str_ += fmt.Sprintf("%s\n", i)
 								}
 							}
-							if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(s)).Do(); err != nil {
+							if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(str_)).Do(); err != nil {
 								log.Print(err)
 							}
 							return
@@ -176,7 +177,8 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 					} else {
 						cate_name = message_arr[1]
 					}
-					r, err := h.CateRepo.Total(user.ID, cate_name)
+					s := utils.Select{Start: now.BeginningOfMonth(), End: now.EndOfMonth(), Cate: cate_name}
+					r, err := h.CateRepo.Total(user.ID, s)
 					if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前 %s 餘額為: %d", cate_name, r.Total))).Do(); err != nil {
 						log.Print(err)
 					}
@@ -203,7 +205,7 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 
 				// Create
 				amount, _ := strconv.Atoi(message_arr[0])
-				var cate repo.Cate
+				var cate string
 				if amount != 0 {
 					acc := repo.Account{
 						Amount: amount,
@@ -211,24 +213,29 @@ func (h *LineHandler) CallBack(c *gin.Context) {
 					}
 					if len(message_arr) > 1 {
 						tags := strings.Split(message_arr[1], ",")
-						cate = repo.Cate{Name: tags[0]}
+						cate = tags[0]
 						for _, t := range tags[1:] {
 							acc.Tags = append(acc.Tags, repo.Tag{Name: t, UserID: user.ID})
 						}
 					} else {
-						cate = repo.Cate{Name: "default"}
+						cate = "default"
 					}
-
-					err := h.UserRepo.CreateAccountAndUpdateUser(user, &acc, &cate)
+					ac := repo.CreateAccount{
+						Account: acc,
+						Cate:    cate,
+						Date:    time.Now(),
+					}
+					err := h.UserRepo.CreateAccountAndUpdateCate(user, &ac)
 					if err != nil {
 						log.Print("Create Account Error: %+v", err)
 						return
 					}
 				} else {
-					cate.Name = "default"
+					cate = "default"
 				}
-				r, err := h.CateRepo.Total(user.ID, cate.Name)
-				if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前 %s 餘額為: %d", cate.Name, r.Total))).Do(); err != nil {
+				s := utils.Select{Start: now.BeginningOfMonth(), End: now.EndOfMonth(), Cate: cate}
+				r, err := h.CateRepo.Total(user.ID, s)
+				if _, err = h.LineClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("目前 %s 餘額為: %d", cate, r.Total))).Do(); err != nil {
 					log.Print(err)
 				}
 				return

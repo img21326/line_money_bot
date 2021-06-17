@@ -49,7 +49,7 @@ func main() {
 	handler.NewLineHandler(r, bot, *repo_user, *repo_tag, *repo_acc, *repo_cate)
 	handler.NewTagHandler(r, *repo_user, *repo_tag)
 	handler.NewUserHandler(r, *repo_user, *repo_acc)
-	handler.NewAccHandler(r, *repo_user, *repo_acc)
+	handler.NewAccHandler(r, *repo_user, *repo_acc, *repo_cate)
 
 	// r.POST("/v1/days/sum", func(c *gin.Context) {
 	// 	var u ApiSum

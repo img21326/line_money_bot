@@ -15,18 +15,21 @@ import (
 type AccHandler struct {
 	UserRepo repo.UserRepo
 	AccRepo  repo.AccountRepo
+	CateRepo repo.CateRepo
 }
 
-func NewAccHandler(e *gin.Engine, u repo.UserRepo, a repo.AccountRepo) {
+func NewAccHandler(e *gin.Engine, u repo.UserRepo, a repo.AccountRepo, c repo.CateRepo) {
 	handler := AccHandler{
 		UserRepo: u,
 		AccRepo:  a,
+		CateRepo: c,
 	}
 
 	e.GET("/acc/list/cate/sum", handler.ShowListCateOfSumPage)
 	e.GET("/acc/list/day/sum", handler.ShowListDayOfSumPage)
 
 	e.POST("/v1/acc/month/sum", handler.MonthOfSum)
+	e.POST("v1/acc/month/list/cate", handler.ListCate)
 	e.POST("v1/acc/month/list/cate/sum", handler.ListMonthOfCateSum)
 	e.POST("/v1/acc/days/list/sum", handler.ListDayOfSum)
 	e.POST("/v1/acc/day/list/info", handler.ListDayOfInfo)
@@ -71,6 +74,25 @@ func (h *AccHandler) ShowListCateOfSumPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "listcateofsum", gin.H{
 		"liff_id": os.Getenv("LIFF_LISTCATEOFSUM"),
 	})
+}
+
+func (h *AccHandler) ListCate(c *gin.Context) {
+	var user_input AccInputListMonthOfCateSum
+	if err := c.BindJSON(&user_input); err != nil {
+		log.Printf("Acc ListMonthOfCateSum BindJson err: %+v \n", err)
+		c.AbortWithStatus(400)
+		return
+	}
+	user := h.UserRepo.FindOrCreateUser(user_input.UserId)
+	t := time.Date(user_input.Year, time.Month(user_input.Month), 1, 0, 0, 0, 0, time.Now().Location())
+	s := utils.Select{Start: t, End: now.With(t).EndOfMonth()}
+	r, err := h.CateRepo.List(user.ID, s)
+	if err != nil {
+		log.Printf("Acc ListMonthOfCateSum err: %+v \n", err)
+		c.AbortWithStatus(500)
+		return
+	}
+	c.JSON(200, r)
 }
 
 func (h *AccHandler) ListMonthOfCateSum(c *gin.Context) {

@@ -1,6 +1,9 @@
 package repo
 
 import (
+	"time"
+
+	"github.com/jinzhu/now"
 	"gorm.io/gorm"
 )
 
@@ -8,7 +11,7 @@ type User struct {
 	gorm.Model
 	LineId   string    `json:"line_id"`
 	Accounts []Account `json:"accounts"`
-	tags     []Tag     `json:"tags"`
+	Tags     []Tag     `json:"tags"`
 	Cates    []Cate    `json:"cates"`
 }
 
@@ -30,7 +33,13 @@ func (r *UserRepo) FindOrCreateUser(line_id string) (user *User) {
 	return user
 }
 
-func (r *UserRepo) CreateAccountAndUpdateUser(user *User, account *Account, cate *Cate) error {
+type CreateAccount struct {
+	Account Account
+	Cate    string
+	Date    time.Time
+}
+
+func (r *UserRepo) CreateAccountAndUpdateCate(user *User, ac *CreateAccount) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.First(&user).Error; err != nil {
 			return err
@@ -38,20 +47,27 @@ func (r *UserRepo) CreateAccountAndUpdateUser(user *User, account *Account, cate
 		// user.Total += int64(account.Amount)
 		var fcate Cate
 		var err error
-		tx.Model(&Cate{}).Where("user_id", user.ID).Where("name", cate.Name).Find(&fcate)
+		tx.Model(&Cate{}).Where("user_id", user.ID).Where("name", ac.Cate).Where("created_at > ?", now.BeginningOfMinute()).Where("created_at <= ?", now.EndOfMonth()).Find(&fcate)
 		if fcate.ID == 0 {
-			fcate = Cate{UserID: user.ID, Name: cate.Name, Total: int64(account.Amount)}
+			var pre_cate Cate
+			d := now.BeginningOfMonth().AddDate(0, 0, -1)
+			tx.Model(&Cate{}).Where("user_id", user.ID).Where("name", ac.Cate).Where("created_at > ?", now.With(d).BeginningOfMonth()).Where("created_at <= ?", now.With(d).EndOfMonth()).Find(&pre_cate)
+			if pre_cate.ID != 0 {
+				fcate = Cate{UserID: user.ID, Name: ac.Cate, Total: int64(int(pre_cate.Total) + ac.Account.Amount)}
+			} else {
+				fcate = Cate{UserID: user.ID, Name: ac.Cate, Total: int64(ac.Account.Amount)}
+			}
 			err = tx.Create(&fcate).Error
 		} else {
-			fcate.Total += int64(account.Amount)
+			fcate.Total += int64(ac.Account.Amount)
 			err = tx.Save(&fcate).Error
 		}
 		if err != nil {
 			return err
 		}
 		//
-		account.CateID = fcate.ID
-		if err := tx.Create(&account).Error; err != nil {
+		ac.Account.CateID = fcate.ID
+		if err := tx.Create(&ac.Account).Error; err != nil {
 			return err
 		}
 		return nil

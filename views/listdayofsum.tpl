@@ -8,10 +8,6 @@ Index
 </div>
 <div class="mainbox">
     <select class="form-select" aria-label="Default select example">
-        <option selected>Open this select menu</option>
-        <option value="1">One</option>
-        <option value="2">Two</option>
-        <option value="3">Three</option>
     </select>
     <ul class="nav justify-content-center">
         <li class="nav-item">
@@ -61,6 +57,7 @@ Index
     var myChart = new Chart(ctx, config);
     var userId = "";
     var cate = "{{.cate}}";
+    var cate_arr = [];
 
     $(function() {
         $(".mainbox").hide();
@@ -76,8 +73,23 @@ Index
             liff.getProfile().then(user => {
                 console.log(user.userId);
                 userId = user.userId;
+                getListCate(userId).then(val => {
+                    cate_arr = val;
+                    $.each(val, (index, v) => {
+                        if (cate != "" && cate == v) {
+                            $('.form-select').append(`<option selected="selected" value="${v}">
+                            ${v}<`+`/option>`); 
+                        } else {
+                            $('.form-select').append(`<option value="${v}">
+                            ${v}<`+`/option>`);
+                        }
+                    })
+                    if (cate == "") {
+                        cate = cate_arr[0]
+                    }
+                    fetchAll(user.userId, dt.getFullYear(), dt.getMonth() + 1);
+                })
                 // getData(user.userId, dt.getFullYear(), dt.getMonth() + 1)
-                fetchAll(user.userId, dt.getFullYear(), dt.getMonth() + 1);
             })
         }).catch(function(error) {
             console.log(error);
@@ -92,6 +104,11 @@ Index
         dt = new Date(dt.setMonth(dt.getMonth() + 1));
         fetchAll(userId, dt.getFullYear(), dt.getMonth() + 1);
     });
+    $('.form-select').on('change', (event) => {
+        cate = event.target.value
+        console.log(cate)
+        fetchAll(userId, dt.getFullYear(), dt.getMonth() + 1);
+    });
 
     function loading() {
         $(".loading").fadeIn()
@@ -104,7 +121,7 @@ Index
     }
 
     function fetchAll(userId, year, month) {
-        $("#date").html(`${year}-${month} (${cate})`);
+        $("#date").html(`${year}-${month}`);
         loading();
         Promise.all([getListDayOfSumData(userId, year, month)]).then(values => {
             $("#accordionPanelsStayOpenExample").html("");
@@ -140,33 +157,10 @@ aria-labelledby="panelsStayOpen-heading${index}">
                                     </div>
                                 </div>
                             </div>`
-
-                    // <table class="table">
-                    //     <thead>
-                    //         <tr>
-                    //             <th scope="col">Date</th>
-                    //             <th scope="col">Total</th>
-                    //             <th scope="col">Tags</th>
-                    //         </tr>
-                    //     </thead>
-                    //     <tbody>
-                    //         <tr>
-                    //             <th scope="row">1</th>
-                    //             <td>Mark</td>
-                    //             <td>Otto</td>
-                    //         </tr>
-                    //         <tr>
-                    //             <th scope="row">2</th>
-                    //             <td>Jacob</td>
-                    //             <td>Thornton</td>
-                    //         </tr>
-                    //     </tbody>
-                    // </table>
                 );
                 labels.push(`${data.day.getFullYear()}-${addZero(data.day.getMonth() + 1)}-${addZero(data.day.getDate())}`);
                 values.push(data.total);
             });
-            console.log(values);
             config.data.labels = labels;
 
             config.data.datasets.push({
@@ -220,8 +214,6 @@ aria-labelledby="panelsStayOpen-heading${index}">
             getListDayOfInfoData(userId, year, month, day).then(value => {
                 $(this).find(".accordion-body").attr("data-status", "1")
                 $(this).find(".accordion-body").html("")
-                console.log(value.length)
-                console.log(value.length > 0)
                 if (value.length > 0) {
                     html_ =
                         `<table class="table" style="width:100%;word-break:break-all; word-wrap:break-all;"><thead><tr><th scope="col">Date</th><th scope="col">Total</th><th scope="col">Tags</th></tr></thead><tbody>`
@@ -234,13 +226,36 @@ aria-labelledby="panelsStayOpen-heading${index}">
                              </tr>`
 
                     })
-                    console.log(html_)
                     $(this).find(".accordion-body").html(html_)
                 }
             })
         }
 
     });
+
+    function getListCate(userId) {
+        return new Promise(function(resolve, reject) {
+            $.ajax({
+                url: "/v1/acc/month/list/cate",
+                type: "POST",
+                cache: false,
+                dataType: 'json',
+                data: JSON.stringify({
+                    "user_id": userId,
+                }),
+                contentType: "application/json",
+                success: (res) => {
+                    resolve(res);
+                },
+
+                error: function(xhr, ajaxOptions, thrownError) {
+                    console.log(xhr.status);
+                    console.log(thrownError);
+                    reject(xhr);
+                }
+            });
+        })
+    }
 
     function getListDayOfInfoData(userId, year, month, day) {
         return new Promise(function(resolve, reject) {
