@@ -5,7 +5,6 @@ import (
 	"moneybot/repo"
 	"moneybot/utils"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +14,14 @@ import (
 type TagHandler struct {
 	UserRepo repo.UserRepo
 	TagRepo  repo.TagRepo
+	Liff     map[string]interface{}
 }
 
-func NewTagHandler(e *gin.Engine, u repo.UserRepo, t repo.TagRepo) {
+func NewTagHandler(e *gin.Engine, u repo.UserRepo, t repo.TagRepo, l map[string]interface{}) {
 	handler := TagHandler{
 		UserRepo: u,
 		TagRepo:  t,
+		Liff:     l,
 	}
 
 	e.GET("/tag/list/name/sum", handler.ShowTagsOfSumPage)
@@ -29,7 +30,7 @@ func NewTagHandler(e *gin.Engine, u repo.UserRepo, t repo.TagRepo) {
 
 func (h *TagHandler) ShowTagsOfSumPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "tagsum", gin.H{
-		"liff_id": os.Getenv("LIFF_TAGSUM"),
+		"liff_id": h.Liff["tagsum"],
 	})
 }
 

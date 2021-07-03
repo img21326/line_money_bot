@@ -49,6 +49,7 @@ func (r *UserRepo) CreateAccountAndUpdateCate(user *User, ac *CreateAccount) err
 		var err error
 		tx.Model(&Cate{}).Where("user_id", user.ID).Where("name", ac.Cate).Where("created_at > ?", now.BeginningOfMinute()).Where("created_at <= ?", now.EndOfMonth()).Find(&fcate)
 		if fcate.ID == 0 {
+			// 將上個月的匯入 或是 新建新的一筆
 			var pre_cate Cate
 			d := now.BeginningOfMonth().AddDate(0, 0, -1)
 			tx.Model(&Cate{}).Where("user_id", user.ID).Where("name", ac.Cate).Where("created_at > ?", now.With(d).BeginningOfMonth()).Where("created_at <= ?", now.With(d).EndOfMonth()).Find(&pre_cate)

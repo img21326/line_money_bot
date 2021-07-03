@@ -5,7 +5,6 @@ import (
 	"moneybot/repo"
 	"moneybot/utils"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,13 +15,15 @@ type AccHandler struct {
 	UserRepo repo.UserRepo
 	AccRepo  repo.AccountRepo
 	CateRepo repo.CateRepo
+	Liff     map[string]interface{}
 }
 
-func NewAccHandler(e *gin.Engine, u repo.UserRepo, a repo.AccountRepo, c repo.CateRepo) {
+func NewAccHandler(e *gin.Engine, u repo.UserRepo, a repo.AccountRepo, c repo.CateRepo, l map[string]interface{}) {
 	handler := AccHandler{
 		UserRepo: u,
 		AccRepo:  a,
 		CateRepo: c,
+		Liff:     l,
 	}
 
 	e.GET("/acc/list/cate/sum", handler.ShowListCateOfSumPage)
@@ -72,7 +73,7 @@ type AccInputListMonthOfCateSum struct {
 
 func (h *AccHandler) ShowListCateOfSumPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "listcateofsum", gin.H{
-		"liff_id": os.Getenv("LIFF_LISTCATEOFSUM"),
+		"liff_id": h.Liff["listcateofsum"],
 	})
 }
 
@@ -121,7 +122,7 @@ func (h *AccHandler) ShowListDayOfSumPage(c *gin.Context) {
 		cate = q["cate"][0]
 	}
 	c.HTML(http.StatusOK, "listdayofsum", gin.H{
-		"liff_id": os.Getenv("LIFF_LISTDAYOFSUM"),
+		"liff_id": h.Liff["listdayofsum"],
 		"cate":    cate,
 	})
 }

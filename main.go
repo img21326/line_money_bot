@@ -5,29 +5,37 @@ import (
 	"log"
 	"moneybot/handler"
 	"moneybot/repo"
-	"os"
 
 	gintemplate "github.com/foolin/gin-template"
 	"github.com/gin-gonic/gin"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
+	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+func init() {
+	viper.SetConfigFile("env.json")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Printf("Read ENV file err: %+v", err)
+	}
+}
+
 func main() {
+	CHANNEL_SECRET := viper.GetString("line.secret")
+	CHANNEL_TOKEN := viper.GetString("line.token")
 	bot, err := linebot.New(
-		os.Getenv("CHANNEL_SECRET"),
-		os.Getenv("CHANNEL_TOKEN"),
+		CHANNEL_SECRET,
+		CHANNEL_TOKEN,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db_host := os.Getenv("POSTGRES_HOST")
-	db_pwd := os.Getenv("POSTGRES_PASSWORD")
-	db_port := os.Getenv("POSTGRES_PORT")
+	db_host := viper.GetString("db.host")
+	db_pwd := viper.GetString("db.password")
+	db_port := viper.GetString("db.port")
 	dsn := fmt.Sprintf("host=%s user=postgres password=%s dbname=moneybot port=%s sslmode=disable TimeZone=Asia/Taipei", db_host, db_pwd, db_port)
-	log.Println(dsn)
 	// time.Sleep(10 * time.Second)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	db.AutoMigrate(&repo.User{}, &repo.Account{}, &repo.Tag{}, &repo.Cate{})
@@ -46,28 +54,13 @@ func main() {
 	repo_user := repo.NewUserRepo(db)
 	repo_cate := repo.NewCateRepo(db)
 
+	liff_conf := viper.GetStringMap("liff")
 	handler.NewLineHandler(r, bot, *repo_user, *repo_tag, *repo_acc, *repo_cate)
-	handler.NewTagHandler(r, *repo_user, *repo_tag)
+	handler.NewTagHandler(r, *repo_user, *repo_tag, liff_conf)
 	handler.NewUserHandler(r, *repo_user, *repo_acc)
-	handler.NewAccHandler(r, *repo_user, *repo_acc, *repo_cate)
+	handler.NewAccHandler(r, *repo_user, *repo_acc, *repo_cate, liff_conf)
 
-	// r.POST("/v1/days/sum", func(c *gin.Context) {
-	// 	var u ApiSum
-	// 	if err := c.BindJSON(&u); err != nil {
-	// 		log.Printf("Tags Sum BindJson err: %+v \n", err)
-	// 		c.AbortWithStatus(400)
-	// 		return
-	// 	}
-	// 	user := Repo.FindOrCreateUser(u.UserId)
-	// 	t := time.Date(u.Year, time.Month(u.Month), 1, 0, 0, 0, 0, time.Now().Location())
-	// 	search := &Search{User: user, Start: t, End: now.With(t).EndOfMonth()}
-	// 	if u.Tag != "" {
-	// 		search.Tag = Tag{Name: u.Tag}
-	// 	}
-	// 	r := Repo.DayOfSum(search)
-	// 	c.JSON(200, r)
-	// })
-
-	log.Printf("Server Start at Port: %s", os.Getenv("PORT"))
-	r.Run(fmt.Sprintf(":%s", os.Getenv("PORT")))
+	PORT := viper.GetString("port")
+	log.Printf("Server Start at Port: %s", PORT)
+	r.Run(fmt.Sprintf(":%s", PORT))
 }
