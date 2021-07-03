@@ -5,3 +5,4 @@ pgdata/
 pgdata/*
 .env
 moneybot
+env.json
