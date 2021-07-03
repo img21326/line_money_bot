@@ -77,6 +77,7 @@ func (h *AccHandler) ShowListCateOfSumPage(c *gin.Context) {
 	})
 }
 
+// 當月的類別列表
 func (h *AccHandler) ListCate(c *gin.Context) {
 	var user_input AccInputListMonthOfCateSum
 	if err := c.BindJSON(&user_input); err != nil {
@@ -154,6 +155,7 @@ type AccInputDayOfInfo struct {
 	Day    int    `json:"day"`
 }
 
+// 當天詳細購買資訊
 func (h *AccHandler) ListDayOfInfo(c *gin.Context) {
 	var user_input AccInputDayOfInfo
 	if err := c.BindJSON(&user_input); err != nil {

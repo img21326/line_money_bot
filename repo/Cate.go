@@ -42,7 +42,7 @@ func (r *CateRepo) Total(user_id uint, s utils.Select) (cate *Cate, err error) {
 
 func (r *CateRepo) List(user_id uint, s utils.Select) (names []string, err error) {
 	w := r.db.Model(&Cate{}).Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Distinct()
-	err = w.Pluck("name", &names).Error
+	err = w.Debug().Pluck("name", &names).Error
 	if err != nil {
 		log.Printf("Error By Cate List: %+v", err)
 	}

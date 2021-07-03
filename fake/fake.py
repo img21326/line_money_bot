@@ -3,18 +3,20 @@ import os
 from faker import Faker
 import datetime
 import random
+import requests
+import json
 
 random.seed("qoinefoin")
 
-db_host = os.getenv("POSTGRES_HOST")
-db_pwd = os.getenv("POSTGRES_PASSWORD")
-db_port = os.getenv("POSTGRES_PORT")
+# db_host = os.getenv("POSTGRES_HOST")
+# db_pwd = os.getenv("POSTGRES_PASSWORD")
+# db_port = os.getenv("POSTGRES_PORT")
 
-conn_dns = 'host={} user={} password={} dbname={} port={}'.format(
-    db_host, "postgres", db_pwd, "moneybot", db_port)
+# conn_dns = 'host={} user={} password={} dbname={} port={}'.format(
+#     db_host, "postgres", db_pwd, "moneybot", db_port)
 
-conn = psycopg2.connect(conn_dns)
-cur = conn.cursor()
+# conn = psycopg2.connect(conn_dns)
+# cur = conn.cursor()
 
 fake = Faker()
 
@@ -40,29 +42,32 @@ for d in date_list:
             'amount':
             random.randint(-300, 300),
             'user_id':
-            1,
-            'cate_id':
-            random.randint(1, 4),
+            'Ub44a894f0f75f644a8d77566251e67c0',
+            'cate':
+            random.sample(fake_name, 1)[0],
             'tags':
             random.sample(fake_name, random.randint(1, 3)),
             'date':
             d,
         })
 
-for i in fake_cate:
-    cur.execute(
-        f"INSERT INTO cates (name, total, user_id) VALUES ('{i}', 0, 1)")
-    conn.commit()
+# for i in fake_cate:
+#     cur.execute(
+#         f"INSERT INTO cates (name, total, user_id) VALUES ('{i}', 0, 1)")
+#     conn.commit()
 
 for i in insert_data:
     print(i)
-    cur.execute(
-        f"INSERT INTO accounts (created_at, amount, user_id, cate_id) VALUES ('{i['date']}',{i['amount']}, {i['user_id']}, '{i['cate_id']}') RETURNING id"
-    )
-    id = cur.fetchone()[0]
-    # print(id)
-    for tag in i['tags']:
-        cur.execute(
-            f"INSERT INTO tags (created_at, name, account_id, user_id) VALUES ('{i['date']}','{tag}', {id},{i['user_id']}) RETURNING id"
-        )
-    conn.commit()
+    r = requests.post("http://localhost:9090/v1/acc/insert",
+                      data=json.dumps(i))
+    print(r.status_code)
+    # cur.execute(
+    #     f"INSERT INTO accounts (created_at, amount, user_id, cate_id) VALUES ('{i['date']}',{i['amount']}, {i['user_id']}, '{i['cate_id']}') RETURNING id"
+    # )
+    # id = cur.fetchone()[0]
+    # # print(id)
+    # for tag in i['tags']:
+    #     cur.execute(
+    #         f"INSERT INTO tags (created_at, name, account_id, user_id) VALUES ('{i['date']}','{tag}', {id},{i['user_id']}) RETURNING id"
+    #     )
+    # conn.commit()

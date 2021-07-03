@@ -73,7 +73,7 @@ Index
             liff.getProfile().then(user => {
                 console.log(user.userId);
                 userId = user.userId;
-                getListCate(userId).then(val => {
+                getListCate(userId, dt.getFullYear(), dt.getMonth() + 1).then(val => {
                     cate_arr = val;
                     $.each(val, (index, v) => {
                         if (cate != "" && cate == v) {
@@ -233,7 +233,7 @@ aria-labelledby="panelsStayOpen-heading${index}">
 
     });
 
-    function getListCate(userId) {
+    function getListCate(userId, year, month) {
         return new Promise(function(resolve, reject) {
             $.ajax({
                 url: "/v1/acc/month/list/cate",
@@ -242,6 +242,8 @@ aria-labelledby="panelsStayOpen-heading${index}">
                 dataType: 'json',
                 data: JSON.stringify({
                     "user_id": userId,
+                    "year": year,
+                    "month": month,
                 }),
                 contentType: "application/json",
                 success: (res) => {

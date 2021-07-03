@@ -5,6 +5,7 @@ import (
 
 	"moneybot/utils"
 
+	"github.com/jinzhu/now"
 	"gorm.io/gorm"
 )
 
@@ -82,7 +83,7 @@ func (r *AccountRepo) ListDayOfInfo(user_id uint, s utils.Select) (accs []Accoun
 	w := r.db.Where("created_at > ?", s.Start).Where("created_at <= ?", s.End)
 	if s.Cate != "" {
 		var cate Cate
-		err = r.db.Model(&Cate{}).Where("name", s.Cate).Where("created_at > ?", s.Start).Where("created_at <= ?", s.End).Find(&cate).Error
+		err = r.db.Model(&Cate{}).Where("name", s.Cate).Where("created_at > ?", now.With(s.Start).BeginningOfMonth()).Where("created_at <= ?", now.With(s.Start).EndOfMonth()).Find(&cate).Error
 		log.Printf("%+v \n", cate)
 		if err == nil || cate.ID != 0 {
 			w = w.Where("cate_id = ?", cate.ID)
